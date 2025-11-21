@@ -1,0 +1,6 @@
+# Oryx build manifest
+[build]
+python_version = "3.11"
+
+[runtime]
+python_version = "3.11"
