@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: extraervideo
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    customDomains:
+      - name: extraervideo.onrender.com
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false  # Set this in Render dashboard
+      - key: GEMINI_API_KEY
+        sync: false  # Set this in Render dashboard

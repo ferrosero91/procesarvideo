@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: video-profile-api
+    ports:
+      - "${PORT:-9000}:9000"
+    environment:
+      # AI Service Keys (At least one required)
+      # Groq is primary service (best quota & speed)
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      
+      # MongoDB Configuration
+      - MONGODB_HOST=mongodb
+      - MONGODB_PORT=27017
+      - MONGODB_USERNAME=${MONGODB_USERNAME:-videoprofile}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD:-videoprofile}
+      - MONGODB_DATABASE=${MONGODB_DATABASE:-video_profile_extractor}
+      - MONGODB_AUTH_DATABASE=${MONGODB_AUTH_DATABASE:-admin}
+      
+      # Server Configuration
+      - PORT=9000
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+    # Resource limits (adjust based on traffic)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mongodb:
+    image: mongo:7.0
+    container_name: video-profile-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USERNAME:-videoprofile}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD:-videoprofile}
+      - MONGO_INITDB_DATABASE=${MONGODB_DATABASE:-video_profile_extractor}
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
